@@ -35,6 +35,8 @@ class ToastrHelper extends Helper
 
     public array $helpers = ['Html'];
 
+    protected array $customCallbacks = [];
+    protected string $customCss = '';
 
     /**
      * Initializes the ToastrHelper by loading the required CSS and JavaScript assets.
@@ -52,12 +54,70 @@ class ToastrHelper extends Helper
         $this->Html->script('CakeToastr.jquery.min.js', ['block' => true]);
         $this->Html->script('CakeToastr.toastr.min.js', ['block' => true]);
 
-        // Merge default config with any custom config
-        $config = array_merge($this->_defaultConfig, $config);
-        $jsonConfig = json_encode($config);
-        $script = "toastr.options = $jsonConfig;";
+        $this->_defaultConfig = array_merge($this->_defaultConfig, $config);
 
-        // Add this script to the script block
+        if (!empty($config['callbacks'])) {
+            $this->customCallbacks = $config['callbacks'];
+        }
+
+        if (!empty($config['customCss'])) {
+            $this->customCss = $config['customCss'];
+        }
+
+        $this->finalize();
+    }
+
+    /**
+     * Set custom CSS to be applied in the view.
+     *
+     * @param string $css Custom CSS string.
+     * @return $this
+     */
+    public function setCustomCss(string $css): self
+    {
+        $this->customCss = $css;
+        return $this;
+    }
+
+    /**
+     * Set the onShown callback dynamically after initialization.
+     *
+     * @param string $function JavaScript function for the onShown event.
+     * @return $this
+     */
+    public function onShown(string $function): self
+    {
+        $this->customCallbacks['onShown'] = $function;
+        return $this;
+    }
+
+    /**
+     * Finalize and output the toastr configuration.
+     *
+     * @return void
+     */
+    public function finalize(): void
+    {
+        $config = $this->_defaultConfig;
+
+        // Add custom callbacks if they are defined
+        foreach ($this->customCallbacks as $event => $function) {
+            $config[$event] = 'JS_FUNCTION';  // Placeholder for the JavaScript function
+        }
+
+        $jsonConfig = json_encode($config);
+
+        // Replace the placeholder with the actual JavaScript functions
+        foreach ($this->customCallbacks as $event => $function) {
+            $jsonConfig = str_replace('"JS_FUNCTION"', $function, $jsonConfig);
+        }
+
+        $script = "toastr.options = $jsonConfig;";
         $this->Html->scriptBlock($script, ['block' => true]);
+
+        // Inject the custom CSS into the view
+        if (!empty($this->customCss)) {
+            echo "<style>{$this->customCss}</style>";
+        }
     }
 }

@@ -8,4 +8,7 @@ if (!isset($params['escape']) || $params['escape'] !== false) {
     $message = h($message);
 }
 ?>
-<div class="message" onclick="this.classList.add('hidden');"><?= $message ?></div>
+
+<script type="text/javascript">
+    toastr.info('<?= $message ?>');
+</script>
